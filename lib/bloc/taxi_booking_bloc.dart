@@ -12,6 +12,9 @@ import 'package:taxi_app/models/taxi_driver.dart';
 import 'package:taxi_app/storage/taxi_booking_storage.dart';
 
 class TaxiBookingBloc extends Bloc<TaxiBookingEvent, TaxiBookingState> {
+  // TaxiBookingBloc(TaxiBookingState initialState) : super(initialState);
+  TaxiBookingBloc() : super(null);
+
   @override
   TaxiBookingState get initialState => TaxiBookingNotInitializedState();
 
@@ -23,14 +26,11 @@ class TaxiBookingBloc extends Bloc<TaxiBookingEvent, TaxiBookingState> {
     }
     if (event is DestinationSelectedEvent) {
       TaxiBookingStorage.open();
-      yield TaxiBookingLoadingState(
-          state: DetailsNotFilledState(booking: null));
+      yield TaxiBookingLoadingState(state: DetailsNotFilledState(booking: null));
 
       GoogleLocation source = await LocationController.getCurrentLocation();
-      GoogleLocation destination =
-          await LocationController.getLocationfromId(event.destination);
-      await TaxiBookingStorage.addDetails(TaxiBooking.named(
-          source: source, destination: destination, noOfPersons: 1));
+      GoogleLocation destination = await LocationController.getLocationfromId(event.destination);
+      await TaxiBookingStorage.addDetails(TaxiBooking.named(source: source, destination: destination, noOfPersons: 1));
       TaxiBooking taxiBooking = await TaxiBookingStorage.getTaxiBooking();
       yield DetailsNotFilledState(booking: taxiBooking);
     }
@@ -49,26 +49,18 @@ class TaxiBookingBloc extends Bloc<TaxiBookingEvent, TaxiBookingState> {
       );
     }
     if (event is TaxiSelectedEvent) {
-      yield TaxiBookingLoadingState(
-          state:
-              PaymentNotInitializedState(booking: null, methodsAvaiable: []));
+      yield TaxiBookingLoadingState(state: PaymentNotInitializedState(booking: null, methodsAvaiable: []));
       TaxiBooking prevBooking = await TaxiBookingStorage.getTaxiBooking();
       double price = await TaxiBookingController.getPrice(prevBooking);
-      await TaxiBookingStorage.addDetails(
-          TaxiBooking.named(taxiType: event.taxiType, estimatedPrice: price));
+      await TaxiBookingStorage.addDetails(TaxiBooking.named(taxiType: event.taxiType, estimatedPrice: price));
       TaxiBooking booking = await TaxiBookingStorage.getTaxiBooking();
       List<PaymentMethod> methods = await PaymentMethodController.getMethods();
-      yield PaymentNotInitializedState(
-          booking: booking, methodsAvaiable: methods);
+      yield PaymentNotInitializedState(booking: booking, methodsAvaiable: methods);
     }
     if (event is PaymentMadeEvent) {
-      yield TaxiBookingLoadingState(
-          state:
-              PaymentNotInitializedState(booking: null, methodsAvaiable: null));
-      TaxiBooking booking = await TaxiBookingStorage.addDetails(
-          TaxiBooking.named(paymentMethod: event.paymentMethod));
-      TaxiDriver taxiDriver =
-          await TaxiBookingController.getTaxiDriver(booking);
+      yield TaxiBookingLoadingState(state: PaymentNotInitializedState(booking: null, methodsAvaiable: null));
+      TaxiBooking booking = await TaxiBookingStorage.addDetails(TaxiBooking.named(paymentMethod: event.paymentMethod));
+      TaxiDriver taxiDriver = await TaxiBookingController.getTaxiDriver(booking);
       yield TaxiNotConfirmedState(booking: booking, driver: taxiDriver);
       await Future.delayed(Duration(seconds: 1));
       yield TaxiBookingConfirmedState(booking: booking, driver: taxiDriver);
@@ -87,12 +79,10 @@ class TaxiBookingBloc extends Bloc<TaxiBookingEvent, TaxiBookingState> {
           yield TaxiBookingNotSelectedState(taxisAvailable: taxis);
           break;
         case PaymentNotInitializedState:
-          yield TaxiNotSelectedState(
-              booking: (state as PaymentNotInitializedState).booking);
+          yield TaxiNotSelectedState(booking: (state as PaymentNotInitializedState).booking);
           break;
         case TaxiNotSelectedState:
-          yield DetailsNotFilledState(
-              booking: (state as TaxiNotSelectedState).booking);
+          yield DetailsNotFilledState(booking: (state as TaxiNotSelectedState).booking);
           break;
       }
     }
